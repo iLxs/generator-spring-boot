@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: <%= appName %>
+  name: <%= appName %>
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: <%= appName %>
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: <%= appName %>
+    spec:
+      containers:
+        - image: acrpoint.azurecr.io/point/<%= appName %>:${DOCKER_TAG}
+          name: <%= appName %>
+          imagePullPolicy: Always
+          resources: {}
+          env:
+            - name: PROFILE
+              value: ${DOCKER_TAG}
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 10
+            timeoutSeconds: 2
+            periodSeconds: 3
+            failureThreshold: 1
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 20
+            timeoutSeconds: 2
+            periodSeconds: 8
+            failureThreshold: 1
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: <%= appName %>
+    spring-boot: "true"
+  name: <%= appName %>
+spec:
+  ports:
+    - name: 8080-8080
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    app: <%= appName %>
+  type: ClusterIP
+status:
+  loadBalancer: {}
